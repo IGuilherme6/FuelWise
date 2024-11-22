@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "976454629039",
+    "project_id": "fuelwise-cc006",
+    "storage_bucket": "fuelwise-cc006.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976454629039:android:8db5c9bb06cb966a72465a",
+        "android_client_info": {
+          "package_name": "br.unigran"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "976454629039-6uvbqpn7iq4jpcr4fksv6g9g3kitcl77.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4P2xDofM9tJ0SFhkkbyD6wSKnS99xtJ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "976454629039-6uvbqpn7iq4jpcr4fksv6g9g3kitcl77.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976454629039:android:982316d3e9dfcbc172465a",
+        "android_client_info": {
+          "package_name": "br.unigran.fuelwise"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "976454629039-6uvbqpn7iq4jpcr4fksv6g9g3kitcl77.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4P2xDofM9tJ0SFhkkbyD6wSKnS99xtJ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "976454629039-6uvbqpn7iq4jpcr4fksv6g9g3kitcl77.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
