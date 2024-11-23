@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:fuelwise/firebase/autenticacaoFirebase.dart';
 import 'package:fuelwise/firebase/login.dart';
 import 'package:fuelwise/telas/CadastroVeiculo.dart';
+import 'package:fuelwise/telas/novoAbastecimento.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -172,29 +173,53 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: ListTile(
                   leading: const Icon(Icons.directions_car, size: 32),
                   title: Text(data['nome']),
-                  subtitle: Text(data['placa']),
-                  trailing: PopupMenuButton(
-                    icon: const Icon(Icons.more_vert),
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: const ListTile(
-                          leading: Icon(Icons.edit),
-                          title: Text('Editar'),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Placa: ${data['placa']}'),
+                      Text('Km Rodado: ${data['km']?.toStringAsFixed(2) ?? "N/A"} km'),
+                      Text('Média Consumo: ${data['mediaConsumo']?.toStringAsFixed(2) ?? "N/A"} km/L'),
+                    ],
+                  ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NovoAbastecimento(
+                          veiculoId: doc.id,
+                          veiculoNome: data['nome'],
                         ),
                       ),
-                      PopupMenuItem(
+                    );
+                  },
+                  trailing: PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit),
+                            SizedBox(width: 8),
+                            Text('Editar'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
                         value: 'delete',
-                        child: const ListTile(
-                          leading: Icon(Icons.delete, color: Colors.red),
-                          title: Text(
-                            'Excluir',
-                            style: TextStyle(color: Colors.red),
-                          ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text(
+                              'Excluir',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                    onSelected: (value) async {
+                    onSelected: (String value) async {
                       if (value == 'delete') {
                         await FirebaseFirestore.instance
                             .collection('users')

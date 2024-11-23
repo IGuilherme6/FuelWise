@@ -150,6 +150,10 @@ class DaoFirestore {
           throw Exception('Quilometragem atual inválida');
         }
 
+        if (kmAtual < kmAnterior) {
+          throw Exception('A quilometragem atual não pode ser menor que a anterior');
+        }
+
         double litros;
         try {
           litros = double.parse(abastecimento.litros.toString());

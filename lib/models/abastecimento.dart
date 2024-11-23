@@ -1,19 +1,15 @@
-
-import 'dart:ffi';
-
 class Abastecimento {
-
   late DateTime _data;
-  late Double _quilometragemAtual;
-  late Double _litros;
+  late double _quilometragemAtual;  // Mudado de Double para double
+  late double _litros;              // Mudado de Double para double
 
   Abastecimento(this._data, this._quilometragemAtual, this._litros);
 
-  set litros(Double value) {
+  set litros(double value) {        // Mudado de Double para double
     _litros = value;
   }
 
-  set quilometragemAtual(Double value) {
+  set quilometragemAtual(double value) {  // Mudado de Double para double
     _quilometragemAtual = value;
   }
 
@@ -21,9 +17,7 @@ class Abastecimento {
     _data = value;
   }
 
-  Double get litros => _litros;
-
-  Double get quilometragemAtual => _quilometragemAtual;
-
+  double get litros => _litros;             // Mudado de Double para double
+  double get quilometragemAtual => _quilometragemAtual;  // Mudado de Double para double
   DateTime get data => _data;
 }
