@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fuelwise/main.dart';
-import 'package:fuelwise/telaPrincipal.dart';
+import 'package:fuelwise/telas/telaPrincipal.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {

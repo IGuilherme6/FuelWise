@@ -36,6 +36,9 @@ class AutenticacaoFirebase {
       return "Erro de autenticação";
     }
   }
+  Future<void> enviarEmailRecuperacaoSenha(String email) async {
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+  }
 
   Future<String> registerWithEmailPassword(
       String email, String password) async {
@@ -66,6 +69,6 @@ class AutenticacaoFirebase {
 
   Future<bool> isUserLoggedIn() async {
     User? user = FirebaseAuth.instance.currentUser;
-    return  user != null; // Retorna true se o usuário estiver logado, caso contrário, false
+    return user != null; // Retorna true se o usuário estiver logado, caso contrário, false
   }
 }

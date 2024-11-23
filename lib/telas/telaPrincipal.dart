@@ -1,0 +1,216 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:fuelwise/firebase/autenticacaoFirebase.dart';
+import 'package:fuelwise/firebase/login.dart';
+import 'package:fuelwise/telas/CadastroVeiculo.dart';
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  AutenticacaoFirebase auth = AutenticacaoFirebase();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("FuelWise"),
+        centerTitle: true,
+        backgroundColor: Colors.blue[800],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue[800],
+              ),
+              child: FutureBuilder<User?>(
+                future: FirebaseAuth.instance.authStateChanges().first,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data == null) {
+                    return const Center(
+                      child: Text(
+                        'Usuário não encontrado',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                    );
+                  }
+
+                  final user = snapshot.data!;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.person, size: 48, color: Colors.white),
+                      const SizedBox(height: 10),
+                      Text(
+                        user.email ?? 'Email não disponível',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline),
+              title: const Text("Adicionar Veículo"),
+              onTap: () {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => CadastroVeiculo()));
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_paste_search),
+              title: const Text("Histórico de Abastecimentos"),
+              onTap: () {
+                // Navigator.push(context, MaterialPageRoute(builder: (context) => HistoricoAbastecimentos()));
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text("Logout"),
+              onTap: () async {
+                await auth.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => Login()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(FirebaseAuth.instance.currentUser?.uid)
+            .collection('veiculos')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(
+              child: Text(
+                'Erro ao carregar veículos',
+                style: TextStyle(fontSize: 18, color: Colors.red),
+              ),
+            );
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.directions_car_outlined, size: 64),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Nenhum veículo cadastrado',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => CadastroVeiculo()),
+                      );
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Adicionar Veículo'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: snapshot.data!.docs.length,
+            itemBuilder: (context, index) {
+              final doc = snapshot.data!.docs[index];
+              final data = doc.data() as Map<String, dynamic>;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: ListTile(
+                  leading: const Icon(Icons.directions_car, size: 32),
+                  title: Text(data['nome']),
+                  subtitle: Text(data['placa']),
+                  trailing: PopupMenuButton(
+                    icon: const Icon(Icons.more_vert),
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: const ListTile(
+                          leading: Icon(Icons.edit),
+                          title: Text('Editar'),
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        child: const ListTile(
+                          leading: Icon(Icons.delete, color: Colors.red),
+                          title: Text(
+                            'Excluir',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ),
+                    ],
+                    onSelected: (value) async {
+                      if (value == 'delete') {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser?.uid)
+                            .collection('veiculos')
+                            .doc(doc.id)
+                            .delete();
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
