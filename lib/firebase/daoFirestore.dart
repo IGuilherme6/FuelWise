@@ -15,7 +15,6 @@ class DaoFirestore {
     );
   }
 
-  // Verifica se tem usuário logado e retorna seu ID
   static String? get currentUserId {
     return auth.currentUser?.uid;
   }
@@ -68,12 +67,22 @@ class DaoFirestore {
     final userId = currentUserId;
     if (userId == null) throw Exception('Usuário não autenticado');
 
-    await db
+    final veiculoRef = db
         .collection('users')
         .doc(userId)
         .collection('veiculos')
-        .doc(veiculoId)
-        .delete();
+        .doc(veiculoId);
+
+    // Deletar todos os abastecimentos associados ao veículo
+    final abastecimentosSnapshot =
+    await veiculoRef.collection('abastecimentos').get();
+    for (var doc in abastecimentosSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    // Deletar o veículo
+    await veiculoRef.delete();
+    print("Veículo e abastecimentos excluídos com sucesso!");
   }
 
   static Stream<List<Veiculo>> getVeiculos() {
@@ -125,6 +134,8 @@ class DaoFirestore {
     final userId = currentUserId;
     if (userId == null) throw Exception('Usuário não autenticado');
 
+    print('Salvando abastecimento para o veículo $veiculoId do usuário $userId');
+
     await db.runTransaction((transaction) async {
       final veiculoRef = db
           .collection('users')
@@ -134,86 +145,92 @@ class DaoFirestore {
 
       final veiculoDoc = await transaction.get(veiculoRef);
 
-      if (veiculoDoc.exists) {
-        // Conversões mais seguras com verificação de tipo
-        double kmAnterior;
-        try {
-          kmAnterior = double.parse(veiculoDoc.data()?['km'].toString() ?? '0.0');
-        } catch (_) {
-          kmAnterior = 0.0;
-        }
-
-        double kmAtual;
-        try {
-          kmAtual = double.parse(abastecimento.quilometragemAtual.toString());
-        } catch (_) {
-          throw Exception('Quilometragem atual inválida');
-        }
-
-        if (kmAtual < kmAnterior) {
-          throw Exception('A quilometragem atual não pode ser menor que a anterior');
-        }
-
-        double litros;
-        try {
-          litros = double.parse(abastecimento.litros.toString());
-        } catch (_) {
-          throw Exception('Quantidade de litros inválida');
-        }
-
-        final kmPercorrido = kmAtual - kmAnterior;
-        final mediaConsumo = kmPercorrido / litros;
-
-        transaction.update(veiculoRef, {
-          'km': kmAtual,
-          'mediaConsumo': mediaConsumo,
-        });
-
-        final abastecimentoRef = veiculoRef.collection('abastecimentos').doc();
-        transaction.set(abastecimentoRef, {
-          'data': Timestamp.fromDate(abastecimento.data),
-          'quilometragemAtual': kmAtual,
-          'litros': litros,
-        });
+      if (!veiculoDoc.exists) {
+        throw Exception('Veículo $veiculoId não encontrado.');
       }
+
+      print('Veículo encontrado, iniciando cálculo de média');
+
+      double kmAnterior = double.parse(veiculoDoc.data()?['km'].toString() ?? '0.0');
+      double kmAtual = abastecimento.quilometragemAtual;
+      double litros = abastecimento.litros;
+
+      if (kmAtual < kmAnterior) {
+        throw Exception('A quilometragem atual não pode ser menor que a anterior');
+      }
+
+      final kmPercorrido = kmAtual - kmAnterior;
+      final mediaConsumo = kmPercorrido / litros;
+
+      print('Km percorrido: $kmPercorrido, Média de consumo: $mediaConsumo');
+
+      transaction.update(veiculoRef, {
+        'km': kmAtual,
+        'mediaConsumo': mediaConsumo,
+      });
+
+      final abastecimentoRef = veiculoRef.collection('abastecimentos').doc();
+      transaction.set(abastecimentoRef, {
+        'data': Timestamp.fromDate(abastecimento.data),
+        'quilometragemAtual': kmAtual,
+        'litros': litros,
+      });
+
+      print('Abastecimento salvo com sucesso.');
+    }).catchError((e) {
+      print('Erro na transação: $e');
     });
   }
 
-  static Stream<List<Abastecimento>> getAbastecimentos(String veiculoId) {
+  static Stream<List<Abastecimento>> getAbastecimentos(String placa) {
     final userId = currentUserId;
     if (userId == null) throw Exception('Usuário não autenticado');
+
+    print('Buscando abastecimentos para o veículo com placa $placa do usuário $userId');
 
     return db
         .collection('users')
         .doc(userId)
         .collection('veiculos')
-        .doc(veiculoId)
-        .collection('abastecimentos')
-        .orderBy('data', descending: true)
+        .where('placa', isEqualTo: placa)  // Busca o veículo pela placa
         .snapshots()
-        .map((snapshot) => snapshot.docs.map((doc) {
-      return Abastecimento(
-        (doc['data'] as Timestamp).toDate(),
-        doc['quilometragemAtual'],
-        doc['litros'],
-      );
-    }).toList());
+        .asyncMap((veiculosSnapshot) async {
+      if (veiculosSnapshot.docs.isEmpty) {
+        print('Nenhum veículo encontrado com a placa $placa');
+        return [];
+      }
+
+      final veiculoDoc = veiculosSnapshot.docs.first;
+      final veiculoId = veiculoDoc.id;
+      print('Veículo encontrado com ID: $veiculoId');
+
+      final abastecimentosSnapshot = await db
+          .collection('users')
+          .doc(userId)
+          .collection('veiculos')
+          .doc(veiculoId)
+          .collection('abastecimentos')
+          .orderBy('data', descending: true)
+          .get();
+
+      print('Encontrados ${abastecimentosSnapshot.docs.length} abastecimentos');
+
+      return abastecimentosSnapshot.docs.map((doc) {
+        final data = (doc['data'] as Timestamp).toDate();
+        final quilometragemAtual = double.parse(doc['quilometragemAtual'].toString());
+        final litros = double.parse(doc['litros'].toString());
+
+        print('Processando abastecimento: Data: $data, Km: $quilometragemAtual, Litros: $litros');
+
+        return Abastecimento(
+          data,
+          quilometragemAtual,
+          litros,
+        );
+      }).toList();
+    });
   }
 
-  static Future<void> excluirAbastecimento(
-      String veiculoId, String abastecimentoId) async {
-    final userId = currentUserId;
-    if (userId == null) throw Exception('Usuário não autenticado');
-
-    await db
-        .collection('users')
-        .doc(userId)
-        .collection('veiculos')
-        .doc(veiculoId)
-        .collection('abastecimentos')
-        .doc(abastecimentoId)
-        .delete();
-  }
 
   static Future<Abastecimento?> getUltimoAbastecimento(String veiculoId) async {
     final userId = currentUserId;
@@ -238,5 +255,21 @@ class DaoFirestore {
       );
     }
     return null;
+  }
+
+  static Future<void> excluirAbastecimento(
+      String veiculoId, String abastecimentoId) async {
+    final userId = currentUserId;
+    if (userId == null) throw Exception('Usuário não autenticado');
+
+    await db
+        .collection('users')
+        .doc(userId)
+        .collection('veiculos')
+        .doc(veiculoId)
+        .collection('abastecimentos')
+        .doc(abastecimentoId)
+        .delete();
+    print("Abastecimento excluído com sucesso!");
   }
 }

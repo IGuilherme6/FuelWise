@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fuelwise/firebase/autenticacaoFirebase.dart';
+import 'package:fuelwise/firebase/daoFirestore.dart';
 import 'package:fuelwise/firebase/login.dart';
 import 'package:fuelwise/telas/CadastroVeiculo.dart';
+import 'package:fuelwise/telas/HistoricoAbastecimentos.dart';
 import 'package:fuelwise/telas/novoAbastecimento.dart';
 
 class MyApp extends StatelessWidget {
@@ -89,14 +91,20 @@ class _MyHomePageState extends State<MyHomePage> {
               title: const Text("Adicionar Veículo"),
               onTap: () {
                 Navigator.push(
-                    context, MaterialPageRoute(builder: (context) => CadastroVeiculo()));
+                  context,
+                  MaterialPageRoute(builder: (context) => CadastroVeiculo()),
+                );
               },
             ),
             ListTile(
               leading: const Icon(Icons.content_paste_search),
               title: const Text("Histórico de Abastecimentos"),
               onTap: () {
-                // Navigator.push(context, MaterialPageRoute(builder: (context) => HistoricoAbastecimentos()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => HistoricoAbastecimentosPage()),
+                );
               },
             ),
             const Divider(),
@@ -150,7 +158,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => CadastroVeiculo()),
+                        MaterialPageRoute(
+                            builder: (context) => CadastroVeiculo()),
                       );
                     },
                     icon: const Icon(Icons.add),
@@ -177,8 +186,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Placa: ${data['placa']}'),
-                      Text('Km Rodado: ${data['km']?.toStringAsFixed(2) ?? "N/A"} km'),
-                      Text('Média Consumo: ${data['mediaConsumo']?.toStringAsFixed(2) ?? "N/A"} km/L'),
+                      Text(
+                          'Km Rodado: ${data['km']?.toStringAsFixed(2) ?? "N/A"} km'),
+                      Text(
+                          'Média Consumo: ${data['mediaConsumo']?.toStringAsFixed(2) ?? "N/A"} km/L'),
                     ],
                   ),
                   onTap: () {
@@ -194,7 +205,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                   trailing: PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert),
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                    itemBuilder: (BuildContext context) =>
+                    <PopupMenuEntry<String>>[
                       const PopupMenuItem<String>(
                         value: 'edit',
                         child: Row(
@@ -219,16 +231,46 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                       ),
                     ],
-                    onSelected: (String value) async {
-                      if (value == 'delete') {
-                        await FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(FirebaseAuth.instance.currentUser?.uid)
-                            .collection('veiculos')
-                            .doc(doc.id)
-                            .delete();
+                      onSelected: (String value) async {
+                        if (value == 'delete') {
+                          bool? confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Confirmar exclusão'),
+                                content: const Text('Tem certeza de que deseja excluir este veículo e todos os seus abastecimentos?'),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('Cancelar'),
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                  ),
+                                  TextButton(
+                                    child: const Text('Excluir'),
+                                    onPressed: () => Navigator.of(context).pop(true),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+
+                          if (confirm == true) {
+                            try {
+                              await DaoFirestore.excluirVeiculo(doc.id);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Veículo e abastecimentos excluídos com sucesso!'),
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erro ao excluir veículo: $e'),
+                                ),
+                              );
+                            }
+                          }
+                        }
                       }
-                    },
                   ),
                 ),
               );
