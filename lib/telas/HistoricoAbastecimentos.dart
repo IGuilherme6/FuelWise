@@ -1,8 +1,13 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fuelwise/controllers/veiculoController.dart';
+import 'package:fuelwise/firebase/autenticacaoFirebase.dart';
 import 'package:fuelwise/firebase/daoFirestore.dart';
+import 'package:fuelwise/firebase/login.dart';
 import 'package:fuelwise/models/abastecimento.dart';
 import 'package:fuelwise/models/veiculos.dart';
+import 'package:fuelwise/telas/CadastroVeiculo.dart';
+import 'package:fuelwise/telas/telaPrincipal.dart';
 import 'package:intl/intl.dart';
 
 class HistoricoAbastecimentosPage extends StatefulWidget {
@@ -22,9 +27,100 @@ class _HistoricoAbastecimentosPageState extends State<HistoricoAbastecimentosPag
 
   @override
   Widget build(BuildContext context) {
+    AutenticacaoFirebase auth = AutenticacaoFirebase();
     return Scaffold(
       appBar: AppBar(
-        title: Text('Histórico de Abastecimentos'),
+        title: const Text("FuelWise"),
+        centerTitle: true,
+        backgroundColor: Colors.blue[800],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue[800],
+              ),
+              child: FutureBuilder<User?>(
+                future: FirebaseAuth.instance.authStateChanges().first,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data == null) {
+                    return const Center(
+                      child: Text(
+                        'Usuário não encontrado',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      ),
+                    );
+                  }
+
+                  final user = snapshot.data!;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.person, size: 48, color: Colors.white),
+                      const SizedBox(height: 10),
+                      Text(
+                        user.email ?? 'Email não disponível',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text("Home"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MyApp()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline),
+              title: const Text("Adicionar Veículo"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => CadastroVeiculo()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.content_paste_search),
+              title: const Text("Histórico de Abastecimentos",
+              style: TextStyle(color: Colors.cyan),),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text("Logout"),
+              onTap: () async {
+                await auth.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => Login()),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       body: StreamBuilder<List<Veiculo>>(
         stream: veiculosStream,

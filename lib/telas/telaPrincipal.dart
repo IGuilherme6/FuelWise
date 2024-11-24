@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:fuelwise/firebase/autenticacaoFirebase.dart';
 import 'package:fuelwise/firebase/daoFirestore.dart';
 import 'package:fuelwise/firebase/login.dart';
+import 'package:fuelwise/models/veiculos.dart';
 import 'package:fuelwise/telas/CadastroVeiculo.dart';
 import 'package:fuelwise/telas/HistoricoAbastecimentos.dart';
+import 'package:fuelwise/telas/editarVeiculos.dart';
 import 'package:fuelwise/telas/novoAbastecimento.dart';
 
 class MyApp extends StatelessWidget {
@@ -81,7 +83,8 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             ListTile(
               leading: const Icon(Icons.home),
-              title: const Text("Home"),
+              title: const Text("Home",
+                  style: TextStyle(color: Colors.cyan)),
               onTap: () {
                 Navigator.pop(context);
               },
@@ -238,7 +241,8 @@ class _MyHomePageState extends State<MyHomePage> {
                             builder: (BuildContext context) {
                               return AlertDialog(
                                 title: const Text('Confirmar exclusão'),
-                                content: const Text('Tem certeza de que deseja excluir este veículo e todos os seus abastecimentos?'),
+                                content: const Text(
+                                    'Tem certeza de que deseja excluir este veículo e todos os seus abastecimentos?'),
                                 actions: <Widget>[
                                   TextButton(
                                     child: const Text('Cancelar'),
@@ -269,8 +273,25 @@ class _MyHomePageState extends State<MyHomePage> {
                               );
                             }
                           }
+                        } else if (value == 'edit') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditarVeiculoScreen(
+                                veiculoId: doc.id,
+                                veiculo: Veiculo(
+                                  data['nome'],
+                                  data['modelo'],
+                                  data['placa'],
+                                  data['ano'],
+                                  data['km'],
+                                ),
+                              ),
+                            ),
+                          );
                         }
                       }
+
                   ),
                 ),
               );
